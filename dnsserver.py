@@ -28,27 +28,6 @@ def binary(bitstr):
 def hex2bitstr(hex_val):
     return bin(int(hex_val, 16))[2:].zfill(8)
 
-
-"""
-DNS packet header structure
-								 1  1  1  1  1  1
-   0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |					 ID						|
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |QR|  Opcode   |AA|TC|RD|RA|   Z	| RCODE	 |
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |					 QDCOUNT				   |
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |					 ANCOUNT				   |
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |					 NSCOUNT				   |
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |					 ARCOUNT				   |
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-"""
-
-
 # parse the DNS header and return a list containing all elements of it
 # this method assumes that header_bitstr has been formatted using Jorn's code
 def parseHeader(header_bitstr):
@@ -91,23 +70,6 @@ def genResponseHeader(parsed_header):
     # build the response
     return ''.join(response_list)
 
-
-"""
-DNS question structure
-								  1  1  1  1  1  1
-	0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |											   |
-   /					QNAME					  /
-   /											   /
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |					QTYPE					  |
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-   |					QCLASS					 |
-   +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-"""
-
-
 # parse the question section of the DNS packet and return a list containing elements
 # this method assumes that quest_bitstr has been formatted using Jorn's code
 def parseQuestion(quest_bitstr):
@@ -148,31 +110,6 @@ def parseQuestion(quest_bitstr):
 
     # return questions, qtype, qclass
     return [QNAME, QTYPE, QCLASS]
-
-
-"""
-DNS answer structure
-									1  1  1  1  1  1
-	  0  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|											   |
-	/											   /
-	/					  NAME					 /
-	|											   |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|					  TYPE					 |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|					 CLASS					 |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|					  TTL					  |
-	|											   |
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-	|				   RDLENGTH					|
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--|
-	/					 RDATA					 /
-	/											   /
-	+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-"""
 
 
 # build the DNS answer
