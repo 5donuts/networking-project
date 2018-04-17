@@ -150,3 +150,6 @@ fabric.properties
 
 # Editor-based Rest Client
 .idea/httpRequests
+
+# just omit all .idea/ stuff
+.idea/
