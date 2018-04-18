@@ -59,13 +59,13 @@ def build_page(page_code, ip_addr):
 
 
 # determine the request method (HTTP GET, HTTP POST, etc.) from the request string
-def get_request_method(encoded_request):
-    return encoded_request.split('\n', 1)[0].split(' ', 1)[0]
+def get_request_method(request_str):
+    return request_str.split('\n', 1)[0].split(' ', 1)[0]
 
 
 # determine the page requested (/, /index.html, etc.) from the request string
-def get_request_uri(encoded_request):
-    return encoded_request.split('\n', 1)[0].split(' ', 2)[1]
+def get_request_uri(request_str):
+    return request_str.split('\n', 1)[0].split(' ', 2)[1]
 
 
 # get the ip address of the client from the connection object
@@ -92,12 +92,12 @@ if __name__ == "__main__":
 
         # receive HTTP request
         request = connection.recv(4096)
-        encoded_request = str(request, 'utf-8')  # needed for python3, but not for python2.7
+        request_str = str(request, 'utf-8')
 
         # determine request type & form response status/text
         page_code = -1
-        if get_request_method(encoded_request) == 'GET':
-            if get_request_uri(encoded_request) == '/':
+        if get_request_method(request_str) == 'GET':
+            if get_request_uri(request_str) == '/':
                 page_code = PAGE_NORMAL
                 response_status = '200'
                 response_status_text = 'OK'
