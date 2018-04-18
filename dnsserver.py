@@ -13,6 +13,7 @@ def setup():
     port = 53
     ip_addr = '127.0.0.1'
     sock = socket(AF_INET, SOCK_DGRAM)
+    sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
     sock.bind((ip_addr, port))
 
     return sock
@@ -145,6 +146,7 @@ if __name__ == "__main__":
 
     # listen for connections until SIGTERM is received
     print("DNS server started. Use ^C to exit")
+
     while True:
         # get DNS request, 512 byte packets use UDP
         request, addr = sock.recvfrom(512)
