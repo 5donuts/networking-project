@@ -42,8 +42,8 @@ def getflags(flag_bytes):
     return rbyte1 + rbyte2
 
 
+# get the domain name for the request
 def get_domain_name(domain_name_bytes):
-    # get the domain name
     expected_length = 0
     part = ''
     domain = []
