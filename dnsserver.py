@@ -1,7 +1,5 @@
-"""
-Charles German & Gabe Lake
-DNS Server
-"""
+#!/bin/python3
+
 from socket import *
 
 # ip addr of the webserver

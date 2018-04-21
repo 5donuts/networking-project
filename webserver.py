@@ -1,7 +1,5 @@
-"""
-Charles German & Gabe Lake
-Webserver
-"""
+#!/bin/python3
+
 from socket import *
 
 # page codes
