@@ -3,6 +3,11 @@
 from socket import *
 
 
+# TODO implement this
+def encrypt(message, pad):
+    return message
+
+
 # connect to the sound server
 def connect():
     server_name = '127.0.0.1'
@@ -11,11 +16,6 @@ def connect():
     sock.connect((server_name, server_port))
 
     return sock
-
-
-# TODO implement this
-def encrypt(message, pad):
-    return message
 
 
 if __name__ == "__main__":
