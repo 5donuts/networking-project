@@ -11,7 +11,7 @@ from bitstring import BitArray
 TONE_DURATION = 0.05  # seconds
 TONE_HIGH = 5000  # Hz
 TONE_LOW = 0  # Hz
-SAMPLING_RATE = 44100  # Hz
+SAMPLE_RATE = 44100  # Hz
 INTER_TRANSMISSION_PAUSE = 1  # seconds
 TRANSMITTER_ADDR = '192.168.0.1'  # TODO find a way to programmatically determine this
 
@@ -51,7 +51,7 @@ def send_transmission(transmission_data):
     # play all tones in the transmission
     print("Playing transmission...", end='', flush=True)
     for tone in transmission_data:
-        sd.play(tone, SAMPLING_RATE)
+        sd.play(tone, SAMPLE_RATE)
         sd.wait()
 
     print("done")
@@ -84,7 +84,7 @@ def play_tone(tone, audio_stream):
 # generate a tone of the given duration (in seconds) at the given frequency using the given audio stream
 def gen_tone(tone_duration, frequency):
     duration = tone_duration * 3  # this makes a duration of 1 approx. equal to 1 second
-    tone = (np.sin(2 * np.pi * np.arange(SAMPLING_RATE * duration) * frequency / SAMPLING_RATE)).astype(np.float32)
+    tone = (np.sin(2 * np.pi * np.arange(SAMPLE_RATE * duration) * frequency / SAMPLE_RATE)).astype(np.float32)
     return tone
 
 
