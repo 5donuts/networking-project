@@ -26,7 +26,7 @@ To temporarily use `dnsserver.py` as your DNS server on a linux system, you can 
 Note that this change will prevent your machine from accessing the internet.
 
 Once your machine is using `dnsserver.py` as your DNS server, you can attempt to visit any site via
-the browser and be redirected to `http://localhost`.
+the browser and be redirected to `http://localhost/`.
 
 ### Transmitter
 The transmitter can be started via `./transmitter.py`.
