@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import pyaudio
+import sounddevice as sd
 import numpy as np
 from socket import *
 import hashlib
@@ -8,12 +8,11 @@ from time import sleep
 from bitstring import BitArray
 
 # global variables
-TONE_DURATION = 1  # seconds
+TONE_DURATION = 0.05  # seconds
 TONE_HIGH = 5000  # Hz
 TONE_LOW = 0  # Hz
 SAMPLING_RATE = 44100  # Hz
-INTER_TRANSMISSION_PAUSE = 10  # seconds
-INTER_TONE_PAUSE = 1  # seconds
+INTER_TRANSMISSION_PAUSE = 1  # seconds
 TRANSMITTER_ADDR = '192.168.0.1'  # TODO find a way to programmatically determine this
 
 
@@ -39,8 +38,8 @@ def build_transmission_data(packet):
 
     # modulate the packet data
     for bit in b.bin:
-        if bit == 1:
-            tranmission_data.append(gen_tone(TONE_DURATION, TONE_HIGH))
+        if bit == '1':
+            transmission_data.append(gen_tone(TONE_DURATION, TONE_HIGH))
         else:
             transmission_data.append(gen_tone(TONE_DURATION, TONE_LOW))
 
@@ -49,29 +48,19 @@ def build_transmission_data(packet):
 
 # play the transmission data
 def send_transmission(transmission_data):
-    # setup audio stream
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paFloat32, channels=1, rate=SAMPLING_RATE, output=True)
-
     # play all tones in the transmission
+    print("Playing transmission...", end='', flush=True)
     for tone in transmission_data:
-        if stream.is_stopped():
-            stream.start_stream()
-        stream.write(tone)
-        while(stream.is_active()):
-            sleep(0.1)
-        stream.stop_stream()
-        sleep(INTER_TONE_PAUSE)
+        sd.play(tone, SAMPLING_RATE)
+        sd.wait()
 
-    # cleanup audio stream
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
+    print("done")
 
 
 # send each packet the given number of times with a pause between transmissions
 def transmit_packet(packet, repetitions):
     # build transmission data for all repetitions
+    print("Building transmission data...", end='', flush=True)
     full_transmission_data = []
     for i in range(0, repetitions):
         # build data for single transmission
@@ -79,6 +68,7 @@ def transmit_packet(packet, repetitions):
 
         # update sequence number
         packet = packet[:64] + bytes([i]) + packet[69:]
+    print("done")
 
     # send all transmissions with a pause between transmissions
     for i in range(0, repetitions):
@@ -160,7 +150,7 @@ if __name__ == "__main__":
 
         # get the message
         message = connection.recv(4096)
-        print("Processing message: ")
+        print("Processing message: ", end='')
         print(message)
 
         # send the packet over the 'wire' 30 times
