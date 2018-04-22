@@ -44,7 +44,7 @@ def transmit_packet(packet, tone_duration, frequency):
             play_tone(tone_duration, 0, stream)
     """
     play_tone(tone_duration, frequency, stream)
-    
+
     # cleanup audio stream
     stream.stop_stream()
     stream.close()
