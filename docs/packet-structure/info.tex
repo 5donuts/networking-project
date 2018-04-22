@@ -9,6 +9,7 @@
   \centering
   \begin{bytefield}[bitwidth=1.1em]{32}
     \bitheader{0-31} \\
+    \wordbox{1}{Preamble} \\
     \begin{rightwordgroup}{Header}
       \wordbox{1}{Source IP Address} \\ % ip addr that sent to transmitter
 
@@ -26,6 +27,7 @@
 
 The packet consists of these fields:
 \begin{itemize}
+\item \textbf{Preamble} - a series of alternating 1s and 0s
 \item \textbf{Source IP Address} - the IP address of the machine that sent the data to the transmitter
 \item \textbf{Transmitter IP Address} - the IP address of the machine transmitting the data
 \item \textbf{SN} (8 bits) - the sequence number of the packet. Since each packet is transmitted 30 times, this is a number between 1 and 30
