@@ -13,13 +13,21 @@ def connect():
     return sock
 
 
+# TODO implement this
+def encrypt(message, pad):
+    return message
+
+
 if __name__ == "__main__":
     # establish connection
     sock = connect()
 
-    # send message
+    # encrypt message
     message = input("Message to send: ")
-    sock.send(bytes(message, 'utf-8'))
+    encrypted_message = encrypt(message, '')
+
+    # send message
+    sock.send(bytes(encrypted_message, 'utf-8'))
 
     # close connection
     sock.close()
