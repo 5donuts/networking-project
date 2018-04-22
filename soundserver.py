@@ -5,10 +5,13 @@ import numpy as np
 from socket import *
 import hashlib
 from time import sleep
+from bitstring import BitArray
 
 # global variables
 TONE_DURATION = 1
 TONE_FREQUENCY = 5000
+INTER_TRANSMISSION_PAUSE = 2
+INTER_TONE_PAUSE = 0.1
 TRANSMITTER_ADDR = '192.168.0.1'  # TODO find a way to programmatically determine this
 
 
@@ -25,18 +28,23 @@ def setup():
 
 # modulate & transmit the given data (an array of bits) using the given frequency
 # each bit is represented by a tone with the given duration (in seconds)
-def transmit_data(bit_array, tone_duration, frequency):
+def transmit_packet(packet, tone_duration, frequency):
     # setup audio stream
     p = pyaudio.PyAudio()
     stream = p.open(format=pyaudio.paFloat32, channels=1, rate=44100, output=True)
 
+    # get array of bits to transmit
+    b = BitArray(packet)
+
     # modulate & transmit data
-    for bit in bit_array:
+    """for bit in b.bin:
         if bit == 1:
             play_tone(tone_duration, frequency, stream)
         else:
             play_tone(tone_duration, 0, stream)
-
+    """
+    play_tone(tone_duration, frequency, stream)
+    
     # cleanup audio stream
     stream.stop_stream()
     stream.close()
@@ -116,23 +124,25 @@ if __name__ == "__main__":
 
         # get the message
         message = connection.recv(4096)
+        print("Received message: ")
+        print(message)
 
         # build base packet from data
-        packet = build_packet(source_addr, TRANSMITTER_ADDR, 1, get_hash(message), message)
+        packet = build_packet(source_addr[0], TRANSMITTER_ADDR, 1, get_hash(message), message)
 
-        # transmit each packet 30 times with 10 second pauses between transmissions
+        # transmit packet 30 times with 10 second pauses between transmissions
         for i in range(0, 30):
             if i == 0:
-                # transmit the packet
-                transmit_data(packet, TONE_DURATION, TONE_FREQUENCY)
+                # transmit the first packet
+                transmit_packet(packet, TONE_DURATION, TONE_FREQUENCY)
             else:
                 # update the sequence number
                 packet = packet[:64] + bytes([i]) + packet[69:]
                 # transmit the packet
-                transmit_data(packet, TONE_DURATION, TONE_FREQUENCY)
+                transmit_packet(packet, TONE_DURATION, TONE_FREQUENCY)
             # wait 10 seconds, unless last packet was transmitted
             if i != 29:
-                sleep(10)
+                sleep(INTER_TRANSMISSION_PAUSE)
 
         # close the connection
         connection.close()

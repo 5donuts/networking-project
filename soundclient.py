@@ -18,8 +18,8 @@ if __name__ == "__main__":
     sock = connect()
 
     # send message
-    message = raw_input("Message to send: ")
-    sock.send(message)
+    message = input("Message to send: ")
+    sock.send(bytes(message, 'utf-8'))
 
     # close connection
     sock.close()
