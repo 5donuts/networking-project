@@ -8,10 +8,12 @@ from time import sleep
 from bitstring import BitArray
 
 # global variables
-TONE_DURATION = 1
-TONE_FREQUENCY = 5000
-INTER_TRANSMISSION_PAUSE = 2
-INTER_TONE_PAUSE = 0.1
+TONE_DURATION = 1  # seconds
+TONE_HIGH = 5000  # Hz
+TONE_LOW = 0  # Hz
+SAMPLING_RATE = 44100  # Hz
+INTER_TRANSMISSION_PAUSE = 10  # seconds
+INTER_TONE_PAUSE = 1  # seconds
 TRANSMITTER_ADDR = '192.168.0.1'  # TODO find a way to programmatically determine this
 
 
@@ -28,22 +30,38 @@ def setup():
 
 # modulate & transmit the given data (an array of bits) using the given frequency
 # each bit is represented by a tone with the given duration (in seconds)
-def transmit_packet(packet, tone_duration, frequency):
-    # setup audio stream
-    p = pyaudio.PyAudio()
-    stream = p.open(format=pyaudio.paFloat32, channels=1, rate=44100, output=True)
+def build_transmission_data(packet):
+    # initialize list
+    transmission_data = []
 
     # get array of bits to transmit
     b = BitArray(packet)
 
-    # modulate & transmit data
-    """for bit in b.bin:
+    # modulate the packet data
+    for bit in b.bin:
         if bit == 1:
-            play_tone(tone_duration, frequency, stream)
+            tranmission_data.append(gen_tone(TONE_DURATION, TONE_HIGH))
         else:
-            play_tone(tone_duration, 0, stream)
-    """
-    play_tone(tone_duration, frequency, stream)
+            transmission_data.append(gen_tone(TONE_DURATION, TONE_LOW))
+
+    return transmission_data
+
+
+# play the transmission data
+def send_transmission(transmission_data):
+    # setup audio stream
+    p = pyaudio.PyAudio()
+    stream = p.open(format=pyaudio.paFloat32, channels=1, rate=SAMPLING_RATE, output=True)
+
+    # play all tones in the transmission
+    for tone in transmission_data:
+        if stream.is_stopped():
+            stream.start_stream()
+        stream.write(tone)
+        while(stream.is_active()):
+            sleep(0.1)
+        stream.stop_stream()
+        sleep(INTER_TONE_PAUSE)
 
     # cleanup audio stream
     stream.stop_stream()
@@ -51,19 +69,37 @@ def transmit_packet(packet, tone_duration, frequency):
     p.terminate()
 
 
-# generate & play a tone of the given duration (in seconds) at the given frequency using the given audio stream
-def play_tone(tone_duration, frequency, audio_stream):
-    # generate tone
-    sampling_rate = 44100  # in Hz
-    duration = tone_duration * 3  # this makes the duration approx. 1 second
-    samples = (np.sin(2 * np.pi * np.arange(sampling_rate * duration) * frequency / sampling_rate)).astype(np.float32)
+# send each packet the given number of times with a pause between transmissions
+def transmit_packet(packet, repetitions):
+    # build transmission data for all repetitions
+    full_transmission_data = []
+    for i in range(0, repetitions):
+        # build data for single transmission
+        full_transmission_data.append(build_transmission_data(packet))
 
-    # play tone
-    audio_stream.write(samples)
+        # update sequence number
+        packet = packet[:64] + bytes([i]) + packet[69:]
+
+    # send all transmissions with a pause between transmissions
+    for i in range(0, repetitions):
+        send_transmission(full_transmission_data[i])
+        sleep(INTER_TRANSMISSION_PAUSE)
+
+
+# play a tone using a given audio stream
+def play_tone(tone, audio_stream):
+    audio_stream.write(tone)
+
+
+# generate a tone of the given duration (in seconds) at the given frequency using the given audio stream
+def gen_tone(tone_duration, frequency):
+    duration = tone_duration * 3  # this makes a duration of 1 approx. equal to 1 second
+    tone = (np.sin(2 * np.pi * np.arange(SAMPLING_RATE * duration) * frequency / SAMPLING_RATE)).astype(np.float32)
+    return tone
 
 
 # calculate the md5 hash of the given message
-# returns string representing hash
+# returns hex string representing hash
 def get_hash(message):
     h = hashlib.md5()
     h.update(message)
@@ -94,11 +130,11 @@ def build_packet(source_ip, transmitter_ip, sequence_number, checksum, data):
     # sequence number
     packet += bytes([int(sequence_number)])
 
-    # length
-    packet += bytes([len(data)])
+    # data length
+    packet += len(data).to_bytes(2, byteorder='big')
 
     # reserved
-    packet += b'\x00' * 12
+    packet += b'\x00' * 8
 
     # checksum
     checksum_bytes = b''
@@ -124,25 +160,11 @@ if __name__ == "__main__":
 
         # get the message
         message = connection.recv(4096)
-        print("Received message: ")
+        print("Processing message: ")
         print(message)
 
-        # build base packet from data
-        packet = build_packet(source_addr[0], TRANSMITTER_ADDR, 1, get_hash(message), message)
-
-        # transmit packet 30 times with 10 second pauses between transmissions
-        for i in range(0, 30):
-            if i == 0:
-                # transmit the first packet
-                transmit_packet(packet, TONE_DURATION, TONE_FREQUENCY)
-            else:
-                # update the sequence number
-                packet = packet[:64] + bytes([i]) + packet[69:]
-                # transmit the packet
-                transmit_packet(packet, TONE_DURATION, TONE_FREQUENCY)
-            # wait 10 seconds, unless last packet was transmitted
-            if i != 29:
-                sleep(INTER_TRANSMISSION_PAUSE)
+        # send the packet over the 'wire' 30 times
+        transmit_packet(message, 30)
 
         # close the connection
         connection.close()
