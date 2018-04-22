@@ -15,8 +15,8 @@
       \wordbox{1}{Transmitter IP Address} \\ % transmitter ip addr
 
       & \bitbox{8}{SN} % sequence number of the packet (x of 30)
-      & \bitbox{12}{Length} % number of bits of data (max 4096)
-      & \bitbox{12}{Reserved} \\
+      & \bitbox{16}{Data Length} % number of bits of data (max 4096)
+      & \bitbox{8}{Reserved} \\
 
       \wordbox{1}{MD5 Checksum}
     \end{rightwordgroup} \\
@@ -29,7 +29,7 @@ The packet consists of these fields:
 \item \textbf{Source IP Address} - the IP address of the machine that sent the data to the transmitter
 \item \textbf{Transmitter IP Address} - the IP address of the machine transmitting the data
 \item \textbf{SN} (8 bits) - the sequence number of the packet. Since each packet is transmitted 30 times, this is a number between 1 and 30
-\item \textbf{Length} (12 bits) - the number of bits of data contained in the packet
+\item \textbf{Data Length} (12 bits) - the number of bits of data contained in the packet
 \item \textbf{Reserved} (12 bits) - reserved for future use
 \item \textbf{MD5 Checksum} - the MD5 checksum of the data calculated prior to transmission
 \item \textbf{Data} - the data payload of the packet; at most 4096 bits
