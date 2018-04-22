@@ -9,7 +9,7 @@ from bitstring import BitArray
 
 # global variables
 TONE_DURATION = 0.05  # seconds (if this is changed, make sure to modify SAMPLES_PER_TONE)
-AUDIO_SAMPLES_PER_TONE = 6616  # TODO find a way to programmatically determine this
+AUDIO_SAMPLES_PER_TONE = 6616  # at 44100Hz TODO find a way to programmatically determine this
 TONE_HIGH = 5000  # Hz
 TONE_LOW = 0  # Hz
 AUDIO_SAMPLE_RATE = 44100  # Hz
@@ -28,8 +28,7 @@ def setup():
     return sock
 
 
-# modulate & transmit the given data (an array of bits) using the given frequency
-# each bit is represented by a tone with the given duration (in seconds)
+# build the list of tones representing a modulated packet
 def build_transmission_data(packet):
     # initialize list
     transmission_data = []
@@ -82,7 +81,7 @@ def play_tone(tone, audio_stream):
     audio_stream.write(tone)
 
 
-# generate a tone of the given duration (in seconds) at the given frequency using the given audio stream
+# generate a tone of the given duration (in seconds) at the given frequency
 def gen_tone(tone_duration, frequency):
     duration = tone_duration * 3  # this makes a duration of 1 approx. equal to 1 second
     tone = (np.sin(2 * np.pi * np.arange(AUDIO_SAMPLE_RATE * duration) * frequency / AUDIO_SAMPLE_RATE)).astype(np.float32)
@@ -108,7 +107,7 @@ def get_ip_addr_bytes(ip_addr):
 
 
 # build a packet containing the message
-# for more information, see ./docs/packet-structure/info.pdf
+# for more information, see docs/packet-structure/info.pdf
 def build_packet(source_ip, transmitter_ip, sequence_number, checksum, data):
     packet = b''
 
