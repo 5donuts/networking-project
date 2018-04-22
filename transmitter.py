@@ -8,7 +8,8 @@ from time import sleep
 from bitstring import BitArray
 
 # global variables
-TONE_DURATION = 0.05  # seconds
+TONE_DURATION = 0.05  # seconds (if this is changed, make sure to modify SAMPLES_PER_TONE)
+AUDIO_SAMPLES_PER_TONE = 6616  # TODO find a way to programmatically determine this
 TONE_HIGH = 5000  # Hz
 TONE_LOW = 0  # Hz
 AUDIO_SAMPLE_RATE = 44100  # Hz
