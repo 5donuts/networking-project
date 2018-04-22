@@ -1,5 +1,5 @@
 # Dependencies
-This project is implemented in `python3` with the following dependencies:
+This project is implemented in Python 3.x with the following dependencies:
 
 * `rtlsdr`
 * `numpy`
@@ -7,7 +7,7 @@ This project is implemented in `python3` with the following dependencies:
 * `bitstring`
 * `scipy`
 
-The process for installing these dependencies may be slightly different for each platform, though 
+Installing dependencies may vary between platforms, though 
 `python3 -m pip install <module>` should work in most cases.
 
 # Usage
@@ -31,7 +31,7 @@ the browser and be redirected to `http://localhost/`.
 ### Transmitter
 The transmitter can be started via `./transmitter.py`.
 
-To send a message using the transmitter, use `./sender.py`.
+To send a message using the transmitter, use `sender.py`.
 The transmitter will modulate this message and play it via the sound card.
 If the machine running the transmitter has an FM transmitter hooked up to the sound card, then
 the transmitter can be used to send an FM broadcast.
