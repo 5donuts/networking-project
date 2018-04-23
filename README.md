@@ -1,5 +1,5 @@
 # Dependencies
-This project is implemented in Python 3.x with the following dependencies:
+This project is implemented in Python 3 with the following dependencies:
 
 * `rtlsdr`
 * `numpy`
@@ -12,8 +12,8 @@ Installing dependencies may vary between platforms, though
 
 # Usage
 
-### Webserver
-The webserver can be started via `./webserver.py`.
+### HTTP Server
+The http server can be started via `./httpserver.py`.
 
 The page hosted by the webserver can be seen by visiting `http://localhost/` in the browser.
 
@@ -22,7 +22,7 @@ The DNS server can be started via `./dnsserver.py`.
 
 To be able to use the DNS server, you must instruct your system to use it.
 
-To temporarily use `dnsserver.py` as your DNS server on a linux system, you can modify `/etc/resolv.conf` to contain `nameserver 127.0.0.1`.
+To temporarily use `dnsserver.py` as your DNS server on a linux system, you can modify `/etc/resolv.conf` to contain `nameserver <address>` where `<address>` is the value of `DNS_ADDR` in `addresses.py`.
 Note that this change will prevent your machine from accessing the internet.
 
 Once your machine is using `dnsserver.py` as your DNS server, you can attempt to visit any site via
