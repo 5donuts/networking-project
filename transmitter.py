@@ -16,7 +16,7 @@ TONE_HIGH = 5000  # Hz
 TONE_LOW = 0  # Hz
 AUDIO_SAMPLE_RATE = 44100  # Hz
 INTER_TRANSMISSION_PAUSE = 5  # seconds
-PACKET_REPETITIONS = 5  # number of times each packet will be transmitted
+PACKET_REPETITIONS = 2  # number of times each packet will be transmitted
 TRANSMITTER_ADDR = '192.168.0.1'  # TODO find a way to programmatically determine this
 
 
