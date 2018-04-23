@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 
 from socket import *
+from shared import *
 
-# ip addr of the webserver
-WEBSERVER_IP_ADDR = '127.0.0.1'
+TTL = 3600  # arbitrary value for ttl field
 
 
-# set up UDP server
+# setup udp server
 def setup():
+    addr = '127.0.0.1'
     port = 53
-    ip_addr = '127.0.0.1'
     sock = socket(AF_INET, SOCK_DGRAM)
     sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    sock.bind((ip_addr, port))
+    sock.bind((addr, port))
 
     return sock
 
@@ -67,19 +67,15 @@ def get_domain_name(domain_name_bytes):
     return ''.join(domain)
 
 
-# turn the WEBSERVER_IP_ADDR into a byte string
+# turn HTTP_ADDR into a byte string
 def get_rdata():
-    parts = WEBSERVER_IP_ADDR.split('.')
-    addr_bytes = b''
-    for part in parts:
-        addr_bytes += bytes([int(part)])
-
-    return addr_bytes
+    return bytes_from_ip(HTTP_ADDR)
 
 
+# build the body of the response
 def build_body(record_type, record_class):
     offset = b'\xc0\x0c'  # offset of 12
-    record_ttl = (3600).to_bytes(4, byteorder='big')  # arbitrary value
+    record_ttl = TTL.to_bytes(4, byteorder='big')  # arbitrary value
     rdlength = b'\x00\x04'  # 4 bytes in the record
     rdata = get_rdata()
 

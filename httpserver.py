@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from socket import *
+from shared import *
 
 # page codes
 PAGE_NORMAL = 0
@@ -8,12 +9,13 @@ PAGE_404 = 1
 PAGE_501 = 2
 
 
-# set up TCP server
+# setup tcp server
 def setup():
+    addr = '127.0.0.1'
     port = 80
     sock = socket(AF_INET, SOCK_STREAM)
     sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    sock.bind(('127.0.0.1', port))
+    sock.bind((addr, port))
     sock.listen(1)
 
     return sock
