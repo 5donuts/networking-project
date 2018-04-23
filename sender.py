@@ -4,7 +4,7 @@ from socket import *
 
 
 # TODO implement this
-def encrypt(message, pad):
+def encrypt(message):
     return message
 
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     # encrypt message
     message = input("Message to send: ")
-    encrypted_message = encrypt(message, '')
+    encrypted_message = encrypt(message)
 
     # send message
     sock.send(bytes(encrypted_message, 'utf-8'))

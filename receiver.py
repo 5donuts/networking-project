@@ -18,7 +18,7 @@ TRANSMISSION_AUDIO_SAMPLE_RATE = AUDIO_SAMPLE_RATE
 
 
 # TODO implement this
-def decrypt(message, pad):
+def decrypt(message):
     return message
 
 
@@ -217,6 +217,7 @@ def separate_transmissions(demodulated_data):
     transmissions = []
     min_tones_between_transmissions = ceil(INTER_TRANSMISSION_PAUSE / TONE_DURATION)
 
+    # TODO fix me
     print("Separating transmissions...", end='', flush=True)
     run_length = 0
     prev_start = 0
@@ -360,7 +361,7 @@ if __name__ == "__main__":
             display_packet_info(info_dict)
         else:
             # TODO decrypt the message
-            message = decrypt(info_dict['data'], '')
+            message = decrypt(info_dict['data'])
 
             # display the decrypted message
             display_packet_info(info_dict, data=message)
