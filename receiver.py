@@ -8,6 +8,7 @@ from scipy.io.wavfile import read
 from bitstring import BitArray
 import hashlib
 from math import ceil
+import asyncio
 
 # constants
 STATION_FREQ = int(87.7e6)  # in Hz
@@ -15,12 +16,28 @@ OFFSET_FREQ = 250000  # offset to capture at, see https://witestlab.poly.edu/blo
 CENTER_FREQ = STATION_FREQ - OFFSET_FREQ
 RADIO_SAMPLE_RATE = int(1140000)
 TRANSMISSION_AUDIO_SAMPLE_RATE = AUDIO_SAMPLE_RATE
+THRESHOLD = 0.1
 
 
 # TODO implement this
 def decrypt(message):
     return message
 
+audio_samples = []
+async def streaming():
+    sdr = setup()
+
+    async for samples in sdr.stream():
+        d = filter_and_downsample(samples)
+        d2 = apply_polar_discriminator(d)
+        audio_samples.append(d2)
+        print(d2)
+
+    # to stop streaming:
+    await sdr.stop()
+
+    # done
+    sdr.close()
 
 # configure sdr device
 def setup():
@@ -165,10 +182,10 @@ def load_wav(filename):
 
 # take audio data and build a list of tones
 def get_tones_from_audio(audio_data):
-    # TODO handle possibility of audio data left over at the end
     print("Building tone list...", end='', flush=True)
 
     # build list of tones
+    # TODO programmatically determine AUDIO_SAMPLES_PER_TONE?
     tones = list(chunks(audio_data[1:], AUDIO_SAMPLES_PER_TONE))
 
     # pad last tone with extra 0s if necessary
@@ -202,8 +219,8 @@ def demodulate(tones):
     print("Demodulating audio data...", end='', flush=True)
     for tone in tones:
         avg = average_tone(tone)
-        # TODO improve this using TONE_HIGH and TONE_LOW
-        if avg < 1000:
+        # TODO get this working properly
+        if avg < 0.1:
             data.append(0)
         else:
             data.append(1)
@@ -243,33 +260,33 @@ def separate_transmissions(demodulated_data):
 
 # rebuild the packet from the data
 def rebuild_packet(data):
-    packet = b''
-
     # preamble
-    packet += BitArray(data[:32]).bytes
+    preamble = BitArray(data[:32]).bytes
 
     # source ip
-    packet += BitArray(data[32:64]).bytes
+    source_ip = BitArray(data[32:64]).bytes
 
     # transmitter ip
-    packet += BitArray(data[64:96]).bytes
+    trans_ip = BitArray(data[64:96]).bytes
 
     # sequence number
-    packet += BitArray(data[96:104]).bytes
+    sequence_number = BitArray(data[96:104]).bytes
 
     # data length
-    packet += BitArray(data[104:120]).bytes
+    b = BitArray(data[104:120])
+    length = b.int
+    data_length = b.bytes
 
     # reserved
-    packet += BitArray(data[120:128]).bytes
+    reserved = BitArray(data[120:128]).bytes
 
     # checksum
-    packet += BitArray(data[128:160]).bytes
+    checksum = BitArray(data[128:256]).bytes
 
     # data
-    packet += BitArray(data[160:]).bytes
+    packet_data = BitArray(data[256:256 + (length * 8)]).bytes
 
-    return packet
+    return preamble + source_ip + trans_ip + sequence_number + data_length + reserved + checksum + packet_data
 
 
 # get information from packet
@@ -279,23 +296,25 @@ def get_packet_info(packet):
     # preamble is 32 bits (4 bytes)
     # source ip (32 bits)
     source_ip_bytes = packet[4:8]
+
     ip = []
     for byte in source_ip_bytes:
-        ip.append(int(byte))
+        ip.append(str(int(byte)))
     info['source_ip'] = '.'.join(ip)
 
     # transmitter ip (32 bits)
     transmitter_ip_bytes = packet[8:12]
+
     ip = []
     for byte in transmitter_ip_bytes:
-        ip.append(int(byte))
+        ip.append(str(int(byte)))
     info['transmitter_ip'] = '.'.join(ip)
 
     # sequence number (8 bits)
-    info['sn'] = int(packet[12:13])
+    info['sn'] = str(BitArray(packet[12:13]).int)
 
     # data length (16 bits)
-    info['data_length'] = BitArray(packet[13:15]).int
+    info['data_length'] = str(BitArray(packet[13:15]).int)
 
     # reserved is 8 bits (1 byte)
     # checksum (32 bits)
@@ -304,7 +323,7 @@ def get_packet_info(packet):
     for byte in checksum_bytes:
         int_val = BitArray(byte).int
         checksum.append(chr(int_val))
-    info['checksum'] = ''.join(checksum)
+    info['checksum'] = str(''.join(checksum), 'utf-8')
 
     # data
     info['data'] = packet[20:]
@@ -316,53 +335,59 @@ def get_packet_info(packet):
 # if data is not None, use data instead of info_dict['data']
 def display_packet_info(info_dict, data=None):
     print("Received packet: ")
-    print("Source: " + source_ip + "\tTransmitter: " + trans_ip)
-    print("SN: " + str(sn) + "\tLength: " + str(length))
-    print("Checksum: " + checksum)
+    print("Source: " + info_dict['source_ip'] + "\tTransmitter: " + info_dict['transmitter_ip'])
+    print("SN: " + info_dict['sn'] + "\t\t\tLength: " + info_dict['data_length'])
+    print("Checksum: " + info_dict['checksum'])
     if data is not None:
-        show_data = data
+        show_data = str(data, 'utf-8')
     else:
         show_data = info_dict['data']
     print("Message: " + show_data)
 
 
 if __name__ == "__main__":
-    # TODO implement getting audio from transmitter
-
     # for testing purposes, load audio data from a wav file
-    audio_data = load_wav("sample_transmission_data.wav")
+    audio_samples = load_wav("sample_transmission_data.wav")
+
+    # loop = asyncio.get_event_loop()
+    # loop.run_until_complete(streaming())
+
+    i = 0
+    started = False
+    while not started and i < len(audio_samples):
+        if abs(audio_samples[i]) > THRESHOLD:
+            started = True
+        else:
+            i += 1
 
     # get tones from the audio data
-    tones = get_tones_from_audio(audio_data)
+    tones = get_tones_from_audio(audio_samples[i:])
 
     # demodulate data
     demodulated_data = demodulate(tones)
 
-    # separate transmissions
-    transmissions = separate_transmissions(demodulated_data)
-
     # display contents of each transmission
-    i = 0
-    for transmission in transmissions:
-        i += 1
-        print("Processing transmission " + str(i) + " of " + str(len(transmissions)))
+    # i = 0
+    # for transmission in transmissions:
+    #     i += 1
+    #     print("Processing transmission " + str(i) + " of " + str(len(transmissions)))
 
-        # build packet from demodulated data
-        packet = rebuild_packet(demodulated_data)
+    # build packet from demodulated data)
+    packet = rebuild_packet(demodulated_data)
 
-        # get packet info
-        info_dict = get_packet_info(packet)
+    # get packet info
+    info_dict = get_packet_info(packet)
 
-        # validate message checksum
-        checksum = get_hash(info_dict['data'])
-        if checksum != info_dict['checksum']:
-            print("WARNING: message checksum does not match calculated value; data is corrupted")
-            # display the raw data
-            display_packet_info(info_dict)
-        else:
-            # TODO decrypt the message
-            message = decrypt(info_dict['data'])
+    # validate message checksum
+    checksum = get_hash(info_dict['data'])
+    if checksum != info_dict['checksum']:
+        print("WARNING: message checksum does not match calculated value; data is corrupted")
+        # display the raw data
+        display_packet_info(info_dict)
+    else:
+        # TODO decrypt the message
+        message = decrypt(info_dict['data'])
 
-            # display the decrypted message
-            display_packet_info(info_dict, data=message)
+        # display the decrypted message
+        display_packet_info(info_dict, data=message)
 

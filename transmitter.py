@@ -62,10 +62,17 @@ def build_multiple_transmissions(packets):
 
 # play the transmission data
 def send_transmission(transmission_data):
-    # play all tones in the transmission
-    for tone in transmission_data:
-        sd.play(tone, AUDIO_SAMPLE_RATE)
-        sd.wait()
+    i = 1
+    for transmission in transmission_data:
+        print("Transmission " + str(i) + " of " + str(PACKET_REPETITIONS) + "...", end='', flush=True)
+        # play all tones in the transmission
+        for tone in transmission:
+            sd.play(tone, AUDIO_SAMPLE_RATE)
+            sd.wait()
+        print("done")
+        sleep(INTER_TRANSMISSION_PAUSE)
+        i += 1
+    del i
 
 
 # generate a tone of the given duration (in seconds) at the given frequency
@@ -77,11 +84,11 @@ def gen_tone(tone_duration, frequency):
 
 
 # calculate the md5 hash of the given message
-# returns hex string representing hash
+# returns byte string representing hash
 def get_hash(message):
     h = hashlib.md5()
     h.update(message)
-    return h.hexdigest()
+    return h.digest()
 
 
 # get a byte representation of a given ip address
@@ -99,8 +106,8 @@ def get_ip_addr_bytes(ip_addr):
 def build_packet(source_ip, transmitter_ip, sequence_number, checksum, data):
     packet = b''
 
-    # preamble
-    packet += b'\x55' * 32  # alternating pattern of 1s and 0s
+    # preamble (1,0,1,0 ... ,1,0,1,1)
+    packet += b'\xaa' * 3 + b'\xab'
 
     # source ip
     packet += get_ip_addr_bytes(source_ip)
@@ -115,13 +122,10 @@ def build_packet(source_ip, transmitter_ip, sequence_number, checksum, data):
     packet += len(data).to_bytes(2, byteorder='big')
 
     # reserved
-    packet += b'\x00' * 8
+    packet += b'\x00'
 
     # checksum
-    checksum_bytes = b''
-    for digit in checksum:
-        checksum_bytes += ord(digit).to_bytes(1, byteorder='big')
-    packet += checksum_bytes
+    packet += checksum  # 16 bytes
 
     # data (comes in as bytes)
     packet += data
@@ -193,14 +197,7 @@ if __name__ == "__main__":
         transmission_data = build_multiple_transmissions(packets)
 
         # transmit all data
-        # i = 1
-        # for transmission in transmission_data:
-        #     print("Transmission " + str(i) + " of " + str(PACKET_REPETITIONS) + "...", end='', flush=True)
-        #     send_transmission(transmission)
-        #     print("done")
-        #     sleep(INTER_TRANSMISSION_PAUSE)
-        #     i += 1
-        # del i
+        # send_transmission(transmission_data)
 
         # for testing purposes, save the audio data to a wave file
         save_transmission_data(transmission_data)
