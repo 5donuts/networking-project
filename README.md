@@ -1,3 +1,5 @@
+See `docs/Exam.pdf` for project instructions.
+
 # Dependencies
 This project is implemented in Python 3 with the following dependencies:
 
