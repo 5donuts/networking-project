@@ -153,3 +153,5 @@ fabric.properties
 
 # just omit all .idea/ stuff
 .idea/
+
+*.wav
