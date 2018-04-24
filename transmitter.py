@@ -182,11 +182,12 @@ if __name__ == "__main__":
         # build transmission data for packets
         transmission_data = build_multiple_transmissions(packets)
 
-        # transmit all data
-        # send_transmission(transmission_data)
-
-        # save the audio data to a wave file
-        save_transmission_data(transmission_data)
+        if FILE_MODE:
+            # save the audio data to a wave file
+            save_transmission_data(transmission_data)
+        else:
+            # transmit all data
+            send_transmission(transmission_data)
 
         # close the connection
         connection.close()

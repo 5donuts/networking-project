@@ -322,12 +322,14 @@ def display_packet_info(info_dict, calc_checksum, data=None):
 
 
 if __name__ == "__main__":
-    #  load audio data from a wav file
-    audio_samples = load_wav(WAV_FILENAME)
-
-    # stream audio samples from the radio
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(streaming())
+    if FILE_MODE:
+        #  load audio data from a wav file
+        audio_samples = load_wav(WAV_FILENAME)
+    # else:
+        # TODO get this working
+        # stream audio samples from the radio
+        # loop = asyncio.get_event_loop()
+        # loop.run_until_complete(streaming())
 
     # TODO properly implement carry sense
     # use carry sense to determine when to start processing audio samples
