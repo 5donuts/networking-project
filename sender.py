@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 
 from socket import *
-from random import choice
-import string
 from shared import *
 
 
-# TODO rework this
-def encrypt(message):
-    return message
-
-
-# TODO rework this
+# connect to the transmitter
 def connect():
     server_name = TRANSMITTER_ADDR
     server_port = TRANSMITTER_PORT
@@ -27,7 +20,9 @@ if __name__ == "__main__":
 
     # encrypt message
     message = input("Message to send: ")
-    encrypted_message = encrypt(message)
+    key = gen_key(message)
+    save_key(key)
+    encrypted_message = encrypt(message, key)
 
     # send message
     sock.send(bytes(encrypted_message, 'utf-8'))

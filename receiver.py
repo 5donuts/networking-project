@@ -10,8 +10,6 @@ from bitstring import BitArray
 import hashlib
 from math import ceil
 import asyncio
-from random import choice
-import string
 from shared import *
 
 # constants
@@ -21,11 +19,6 @@ CENTER_FREQ = STATION_FREQ - OFFSET_FREQ
 RADIO_SAMPLE_RATE = int(1140000)
 TRANSMISSION_AUDIO_SAMPLE_RATE = AUDIO_SAMPLE_RATE
 THRESHOLD = 0.1
-
-
-# TODO rework this
-def decrypt(message):
-    return message
 
 
 # configure sdr device
@@ -237,36 +230,6 @@ def demodulate(tones):
     return data
 
 
-# TODO remove this and properly implement carry sense
-# detect and separate transmissions
-def separate_transmissions(demodulated_data):
-    transmissions = []
-    min_tones_between_transmissions = ceil(INTER_TRANSMISSION_PAUSE / TONE_DURATION)
-
-    # TODO fix me
-    print("Separating transmissions...", end='', flush=True)
-    run_length = 0
-    prev_start = 0
-    idx = 0
-    for bit in demodulated_data:
-        idx += 1
-
-        # find runs of zeroes
-        if bit == 0:
-            run_length += 1
-        else:
-            run_length = 0
-
-        # separate transmissions
-        if run_length == min_tones_between_transmissions:
-            run_length = 0
-            transmissions.append(demodulated_data[prev_start:idx - min_tones_between_transmissions])
-            prev_start = idx - min_tones_between_transmissions
-    print("done")
-
-    return transmissions
-
-
 # rebuild the packet from the data
 def rebuild_packet(data):
     # preamble
@@ -327,28 +290,32 @@ def get_packet_info(packet):
 
     # reserved is 8 bits (1 byte)
     # checksum (32 bits)
-    checksum_bytes = packet[16:20]
-    checksum = []
-    for byte in checksum_bytes:
-        int_val = BitArray(byte).int
-        checksum.append(chr(int_val))
-    info['checksum'] = str(''.join(checksum), 'utf-8')
+    info['checksum'] = get_checksum_hex_from_bytes(packet[16:32])
 
     # data
-    info['data'] = packet[20:]
+    info['data'] = packet[32:]
 
     return info
 
 
+# get the hex representation of the checksum from the bytes of the checksum
+def get_checksum_hex_from_bytes(checksum_bytes):
+    checksum = []
+    for byte in checksum_bytes:
+        checksum.append(chr(byte))
+    return BitArray(bytes(''.join(checksum), 'utf-8')).hex
+
+
 # display packet information
 # if data is not None, use data instead of info_dict['data']
-def display_packet_info(info_dict, data=None):
+def display_packet_info(info_dict, calc_checksum, data=None):
     print("Received packet: ")
     print("Source: " + info_dict['source_ip'] + "\tTransmitter: " + info_dict['transmitter_ip'])
-    print("SN: " + info_dict['sn'] + "\t\t\tLength: " + info_dict['data_length'])
-    print("Checksum: " + info_dict['checksum'])
+    print("SN: " + info_dict['sn'] + "\t\t\tMessage length: " + info_dict['data_length'])
+    print("Recv checksum: " + info_dict['checksum'])
+    print("Calc checksum: " + calc_checksum)
     if data is not None:
-        show_data = str(data, 'utf-8')
+        show_data = data
     else:
         show_data = info_dict['data']
     print("Message: " + show_data)
@@ -356,13 +323,13 @@ def display_packet_info(info_dict, data=None):
 
 if __name__ == "__main__":
     #  load audio data from a wav file
-    audio_samples = load_wav("sample_transmission_data.wav")
+    audio_samples = load_wav(WAV_FILENAME)
 
     # stream audio samples from the radio
     # loop = asyncio.get_event_loop()
     # loop.run_until_complete(streaming())
 
-    # TODO implement carry sense
+    # TODO properly implement carry sense
     # use carry sense to determine when to start processing audio samples
     i = 0
     started = False
@@ -385,15 +352,16 @@ if __name__ == "__main__":
     info_dict = get_packet_info(packet)
 
     # validate message checksum & display packet info
-    checksum = get_hash(info_dict['data'])
+    checksum = get_checksum_hex_from_bytes(get_hash(info_dict['data']))
     if checksum != info_dict['checksum']:
         print("WARNING: message checksum does not match calculated value; data is corrupted")
         # display the raw data
-        display_packet_info(info_dict)
+        display_packet_info(info_dict, checksum)
     else:
-        # TODO decrypt the message
-        message = decrypt(info_dict['data'])
+        # decrypt the message
+        key = load_key()
+        message = decrypt(str(info_dict['data'], 'utf-8'), key)
 
         # display the decrypted message
-        display_packet_info(info_dict, data=message)
+        display_packet_info(info_dict, checksum, data=message)
 

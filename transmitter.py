@@ -85,14 +85,6 @@ def gen_tone(tone_duration, frequency):
     return tone
 
 
-# calculate the md5 hash of the given message
-# returns byte string representing hash
-def get_hash(message):
-    h = hashlib.md5()
-    h.update(message)
-    return h.digest()
-
-
 # build a packet containing the message
 # for more information, see docs/packet-structure/info.pdf
 def build_packet(source_ip, transmitter_ip, sequence_number, checksum, data):
@@ -133,7 +125,7 @@ def save_wav(filename, audio_data):
 
 # save transmission data into a wave file
 def save_transmission_data(transmission_data):
-    print("Building data for wave file...", end='', flush=True)
+    print("Building data for wav file...", end='', flush=True)
 
     # generate tone data for pauses between repetitions
     num_tones = ceil(INTER_TRANSMISSION_PAUSE / TONE_DURATION)
@@ -162,7 +154,7 @@ def save_transmission_data(transmission_data):
     print("done")
 
     # save the generated audio to a file
-    save_wav("sample_transmission_data.wav", wav_data)
+    save_wav(WAV_FILENAME, wav_data)
 
 
 if __name__ == "__main__":
@@ -191,10 +183,10 @@ if __name__ == "__main__":
         transmission_data = build_multiple_transmissions(packets)
 
         # transmit all data
-        send_transmission(transmission_data)
+        # send_transmission(transmission_data)
 
         # save the audio data to a wave file
-        # save_transmission_data(transmission_data)
+        save_transmission_data(transmission_data)
 
         # close the connection
         connection.close()
