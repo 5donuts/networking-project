@@ -82,6 +82,7 @@ if __name__ == "__main__":
     while True:
         # establish connection with client
         connection = sock.accept()[0]
+        print("Processing request from : " + get_ip_addr(connection))
 
         # declaring variables for HTTP response
         response_body = ''
