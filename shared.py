@@ -5,8 +5,8 @@ import string
 import hashlib
 
 # machine addresses
-DNS_ADDR = '192.168.1.11'
-HTTP_ADDR = '192.168.1.11'
+DNS_ADDR = '127.0.0.1'
+HTTP_ADDR = '127.0.0.1'
 TRANSMITTER_ADDR = '127.0.0.1'
 TRANSMITTER_PORT = 4000
 WAV_FILENAME = "transmission.wav"
