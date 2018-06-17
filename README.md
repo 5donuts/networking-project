@@ -24,7 +24,7 @@ The DNS server can be started via `./dnsserver.py`.
 
 To be able to use the DNS server, you must instruct your system to use it.
 
-To temporarily use `dnsserver.py` as your DNS server on a linux system, you can modify `/etc/resolv.conf` to contain `nameserver <address>` where `<address>` is the value of `DNS_ADDR` in `addresses.py`.
+To temporarily use `dnsserver.py` as your DNS server on a linux system, you can modify `/etc/resolv.conf` to contain `nameserver <address>` where `<address>` is the value of `DNS_ADDR` in `shared.py`.
 Note that this change will prevent your machine from accessing the internet.
 
 Once your machine is using `dnsserver.py` as your DNS server, you can attempt to visit any site via
