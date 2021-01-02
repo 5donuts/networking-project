@@ -1,93 +1,75 @@
-use std::sync::{mpsc, Arc, Mutex};
-use std::thread;
+//! A toy implementation of a webserver based on the implementation
+//! from The Book.
 
-type Job = Box<dyn FnOnce() + Send + 'static>;
+mod request;
+mod response;
 
-enum Message {
-    NewJob(Job),
-    Terminate,
+use log::info;
+use request::HttpRequest;
+use response::HttpResponse;
+use std::convert::TryFrom;
+use std::fs;
+use std::io::prelude::*;
+use std::net::{TcpListener, TcpStream};
+use threadpool::ThreadPool;
+
+pub struct Server {
+    listener: TcpListener,
+    pool: ThreadPool,
 }
 
-pub struct ThreadPool {
-    workers: Vec<Worker>,
-    sender: mpsc::Sender<Message>,
-}
-
-impl ThreadPool {
-    /// Create a new ThreadPool.
+impl Server {
+    /// Initialize the server.
     ///
     /// # Arguments
-    /// * `size` - The number of threads in the pool
+    /// * `bind_addr` - The address (and port) at which to listen for TCP connections
+    /// * `threads` - The number of threads to use to process requests.
     ///
     /// # Panics
-    ///
-    /// The `new` function will panic if `size` is zero.
-    pub fn new(size: usize) -> Self {
-        assert!(size > 0);
+    /// `init` will panic if `threads` is zero.
+    pub fn init(bind_addr: &str, threads: usize) -> Self {
+        // setup the listener and thread pool
+        let listener = TcpListener::bind(bind_addr).expect("Unable to bind to address.");
+        let pool = ThreadPool::new(threads);
 
-        let (sender, receiver) = mpsc::channel();
-        let receiver = Arc::new(Mutex::new(receiver));
+        // in case the port '0' (use a random port) was specified in the bind addr,
+        // get the address the listener is on, then log that information
+        let addr = listener.local_addr().unwrap();
+        info!(
+            "Started server at addr: {} with {} threads.",
+            &addr.to_string(),
+            threads
+        );
 
-        let mut workers = Vec::with_capacity(size);
-        for id in 0..size {
-            workers.push(Worker::new(id, Arc::clone(&receiver)));
-        }
-
-        Self { workers, sender }
+        Self { listener, pool }
     }
 
-    pub fn execute<F>(&self, f: F)
-    where
-        F: FnOnce() + Send + 'static,
+    pub fn start(&self) {
+        for stream in self.listener.incoming() {
+            let stream = stream.unwrap();
+
+            self.pool.execute(|| process_connection(stream));
+        }
+    }
+}
+
+fn process_connection(mut stream: TcpStream) {
+    let mut buffer = [0; 1024];
+    stream.read(&mut buffer).unwrap();
+
+    let response = if let Ok(req) =
+        HttpRequest::try_from(String::from_utf8_lossy(&buffer[..]).into_owned().as_str())
     {
-        let job = Box::new(f);
-        self.sender.send(Message::NewJob(job)).unwrap();
-    }
-}
+        todo!("process the request");
+    } else {
+        let status = response::Status::BadRequest;
+        let body = fs::read_to_string("pages/error.html")
+            .expect("Unable to read error page template")
+            .replace("{CODE}", format!("{}", status.code()).as_str())
+            .replace("{MESSAGE}", status.message());
+        HttpResponse::new(status, None, Some(body))
+    };
 
-impl Drop for ThreadPool {
-    fn drop(&mut self) {
-        println!("Sending terminate message to all workers.");
-        for _ in &self.workers {
-            self.sender.send(Message::Terminate).unwrap();
-        }
-
-        println!("Shutting down all workers.");
-        for worker in &mut self.workers {
-            println!("Shutting down worker {}", worker.id);
-
-            if let Some(thread) = worker.thread.take() {
-                thread.join().unwrap();
-            }
-        }
-    }
-}
-
-struct Worker {
-    id: usize,
-    thread: Option<thread::JoinHandle<()>>,
-}
-
-impl Worker {
-    pub fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Self {
-        let thread = thread::spawn(move || loop {
-            let message = receiver.lock().unwrap().recv().unwrap();
-
-            match message {
-                Message::NewJob(job) => {
-                    println!("Worker {} got a job; executing.", id);
-                    job();
-                }
-                Message::Terminate => {
-                    println!("Worker {} was told to terminate.", id);
-                    break;
-                }
-            }
-        });
-
-        Self {
-            id,
-            thread: Some(thread),
-        }
-    }
+    stream.write(response.to_string().as_bytes()).unwrap();
+    stream.flush().unwrap();
 }
