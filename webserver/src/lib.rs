@@ -8,7 +8,6 @@ use log::info;
 use request::HttpRequest;
 use response::HttpResponse;
 use std::convert::TryFrom;
-use std::fs;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
 use threadpool::ThreadPool;
@@ -47,7 +46,6 @@ impl Server {
     pub fn start(&self) {
         for stream in self.listener.incoming() {
             let stream = stream.unwrap();
-
             self.pool.execute(|| process_connection(stream));
         }
     }
@@ -56,18 +54,33 @@ impl Server {
 fn process_connection(mut stream: TcpStream) {
     let mut buffer = [0; 1024];
     stream.read(&mut buffer).unwrap();
+    let req = String::from_utf8_lossy(&buffer[..]).into_owned();
 
-    let response = if let Ok(req) =
-        HttpRequest::try_from(String::from_utf8_lossy(&buffer[..]).into_owned().as_str())
-    {
-        todo!("process the request");
+    let response = if let Ok(req) = HttpRequest::try_from(req.as_str()) {
+        // ensure the request version is supported
+        if req.version() != "HTTP/1.1" {
+            info!(
+                "Got request for unsupported HTTP version: {}",
+                req.version()
+            );
+            HttpResponse::error(response::Status::BadRequest, None)
+        }
+        // ensure the request is for a supported endpoint
+        else if req.path() != "/" {
+            info!("Got request for invalid path: {}", req.path());
+            HttpResponse::error(response::Status::NotFound, None)
+        }
+        // the request is (probably) valid, we just might not respect
+        // the headers it has (since we never check)
+        else {
+            let ip = "foo bar baz";
+            HttpResponse::index(ip, None)
+        }
     } else {
-        let status = response::Status::BadRequest;
-        let body = fs::read_to_string("pages/error.html")
-            .expect("Unable to read error page template")
-            .replace("{CODE}", format!("{}", status.code()).as_str())
-            .replace("{MESSAGE}", status.message());
-        HttpResponse::new(status, None, Some(body))
+        // TODO: handle the case where the request is for an unsupported
+        // method (that should get a NotImplemented response instead).
+        info!("Got bad request: {}", req);
+        HttpResponse::error(response::Status::BadRequest, None)
     };
 
     stream.write(response.to_string().as_bytes()).unwrap();

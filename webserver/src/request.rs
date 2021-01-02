@@ -1,6 +1,9 @@
 //! Module to parse HTTP requests
 
-use std::{collections::HashMap, convert::TryFrom};
+use std::{
+    collections::HashMap,
+    convert::{TryFrom, TryInto},
+};
 
 use log::trace;
 
@@ -10,6 +13,24 @@ pub struct HttpRequest<'a> {
     path: &'a str,
     version: &'a str,
     headers: HashMap<&'a str, String>,
+}
+
+impl HttpRequest<'_> {
+    pub fn method(&self) -> String {
+        self.method.to_string()
+    }
+
+    pub fn path(&self) -> &str {
+        self.path
+    }
+
+    pub fn version(&self) -> &str {
+        self.version
+    }
+
+    pub fn headers(&self) -> &HashMap<&str, String> {
+        &self.headers
+    }
 }
 
 impl<'a> TryFrom<&'a str> for HttpRequest<'a> {
@@ -24,7 +45,10 @@ impl<'a> TryFrom<&'a str> for HttpRequest<'a> {
             .ok_or("Error getting first line of request.")?
             .split_terminator(" ");
 
-        let method = req.next().ok_or("Error getting request method.")?;
+        let method: Method = req
+            .next()
+            .ok_or("Error getting request method.")?
+            .try_into()?;
         let path = req.next().ok_or("Error getting request path.")?;
         let version = req.next().ok_or("Error getting request HTTP version.")?;
         let mut headers = HashMap::new();
@@ -45,7 +69,7 @@ impl<'a> TryFrom<&'a str> for HttpRequest<'a> {
         );
 
         Ok(Self {
-            method: method.into(),
+            method,
             path,
             version,
             headers,
@@ -57,15 +81,22 @@ impl<'a> TryFrom<&'a str> for HttpRequest<'a> {
 enum Method {
     Get,
     Head,
-    Unsupported,
 }
 
-impl From<&str> for Method {
-    fn from(s: &str) -> Self {
+impl TryFrom<&str> for Method {
+    type Error = &'static str;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
         match s.to_uppercase().as_str() {
-            "GET" => Method::Get,
-            "HEAD" => Method::Head,
-            _ => Method::Unsupported,
+            "GET" => Ok(Method::Get),
+            "HEAD" => Ok(Method::Head),
+            _ => Err("Unsupported method"),
         }
+    }
+}
+
+impl std::fmt::Display for Method {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
     }
 }

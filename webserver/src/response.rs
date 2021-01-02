@@ -2,7 +2,34 @@
 
 use std::collections::HashMap;
 
+/// supported HTTP version
 const VERSION: &'static str = "HTTP/1.1";
+
+/// template for the body of an error response
+const ERR_TEMPLATE: &'static str = r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Error {CODE}</title>
+</head>
+<body>
+    <h1>{CODE}</h1>
+    <p>{MESSAGE}</p>
+</body>
+</html>"#;
+
+/// template for the response body of a `GET /` request
+const INDEX_TEMPLATE: &'static str = r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Secret Black Site</title>
+</head>
+<body>
+    <p>Your IP address is: {IP_ADDR}</p>
+</body>
+</html>
+"#;
 
 pub struct HttpResponse {
     status: Status,
@@ -11,24 +38,47 @@ pub struct HttpResponse {
 }
 
 impl HttpResponse {
-    pub fn new(
-        status: Status,
-        headers: Option<HashMap<String, String>>,
-        body: Option<String>,
-    ) -> Self {
-        let body = if let Some(body) = body {
-            body
-        } else {
-            "".into()
-        };
-        let headers = if let Some(headers) = headers {
-            let mut headers = headers;
-            headers.insert("Content-Length".into(), format!("{}", body.len()));
-            headers.insert("Content-Type".into(), "text/html".into());
+    /// Build a response with an HTML body
+    /// describing the error.
+    pub fn error(status: Status, headers: Option<HashMap<String, String>>) -> Self {
+        // build the body from the template
+        let body = ERR_TEMPLATE
+            .replace("{CODE}", format!("{}", status.code()).as_str())
+            .replace("{MESSAGE}", status.message());
+
+        // add necessary headers for the response
+        let mut headers = if let Some(headers) = headers {
             headers
         } else {
             HashMap::new()
         };
+        headers.insert("Content-Type".into(), "text/html".into());
+        headers.insert("Content-Length".into(), format!("{}", body.len()));
+
+        Self {
+            status,
+            headers,
+            body,
+        }
+    }
+
+    /// Build a response for a `GET /` request with the
+    /// IP address of the client.
+    pub fn index(ip_addr: &str, headers: Option<HashMap<String, String>>) -> Self {
+        // this is a `200 Ok` response
+        let status = Status::Ok;
+
+        // build the body from the template
+        let body = ERR_TEMPLATE.replace("{IP_ADDR}", ip_addr);
+
+        // add necessary headers for the response
+        let mut headers = if let Some(headers) = headers {
+            headers
+        } else {
+            HashMap::new()
+        };
+        headers.insert("Content-Type".into(), "text/html".into());
+        headers.insert("Content-Length".into(), format!("{}", body.len()));
 
         Self {
             status,
