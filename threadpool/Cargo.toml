@@ -1,0 +1,11 @@
+[package]
+name = "threadpool"
+description = "A toy implementation of a thread pool for executing tasks."
+version = "0.1.0"
+authors = ["Charles German <5donuts@protonmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4"
